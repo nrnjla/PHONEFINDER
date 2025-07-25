@@ -1,0 +1,103 @@
+Imports System.Diagnostics
+
+Public Class Form1
+
+    ' Class to hold contact info
+    Public Class Contact
+        Public Property Name As String
+        Public Property Phone As String
+    End Class
+
+    ' List to hold all contacts
+    Private contacts As New List(Of Contact)
+
+    Private Sub btnAddContact_Click(sender As Object, e As EventArgs) Handles btnAddContact.Click
+        Dim c As New Contact
+        c.Name = txtName.Text
+        c.Phone = txtPhone.Text
+
+        If c.Name = "" Or c.Phone = "" Then
+            MessageBox.Show("Please enter both name and phone.")
+            Return
+        End If
+
+        contacts.Add(c)
+        UpdateGrid()
+        txtName.Clear()
+        txtPhone.Clear()
+    End Sub
+
+    Private Sub UpdateGrid()
+        dgvContacts.DataSource = Nothing
+        dgvContacts.DataSource = contacts
+    End Sub
+
+    ' Combined search button click
+    Private Sub btnSearch_Click(sender As Object, e As EventArgs) Handles btnSearch.Click
+        Dim target = txtSearch.Text
+        Dim linearSw As New Stopwatch()
+        Dim binarySw As New Stopwatch()
+
+        '--- Linear Search ---
+        Dim linearSteps As Integer = 0
+        Dim linearIndex As Integer = -1
+
+        linearSw.Start()
+        For i = 0 To contacts.Count - 1
+            linearSteps += 1
+            If contacts(i).Name = target Then
+                linearIndex = i
+                Exit For
+            End If
+        Next
+        linearSw.Stop()
+
+        '--- Binary Search ---
+        Dim sortedContacts = contacts.OrderBy(Function(c) c.Name).ToList()
+        Dim left As Integer = 0
+        Dim right As Integer = sortedContacts.Count - 1
+        Dim binarySteps As Integer = 0
+        Dim binaryIndex As Integer = -1
+
+        binarySw.Start()
+        While left <= right
+            binarySteps += 1
+            Dim mid = left + (right - left) \ 2
+
+            If sortedContacts(mid).Name = target Then
+                binaryIndex = mid
+                Exit While
+            ElseIf sortedContacts(mid).Name < target Then
+                left = mid + 1
+            Else
+                right = mid - 1
+            End If
+        End While
+        binarySw.Stop()
+
+        '--- Display Results ---
+        Dim result As String = ""
+
+        If linearIndex <> -1 Then
+            result &= $"Linear Search: Found at index {linearIndex}. Steps: {linearSteps}. Time: {linearSw.Elapsed.TotalMilliseconds} ms." & vbCrLf
+        Else
+            result &= $"Linear Search: Not found. Steps: {linearSteps}. Time: {linearSw.Elapsed.TotalMilliseconds} ms." & vbCrLf
+        End If
+
+        If binaryIndex <> -1 Then
+            result &= $"Binary Search: Found in sorted list at index {binaryIndex}. Steps: {binarySteps}. Time: {binarySw.Elapsed.TotalMilliseconds} ms." & vbCrLf
+        Else
+            result &= $"Binary Search: Not found. Steps: {binarySteps}. Time: {binarySw.Elapsed.TotalMilliseconds} ms." & vbCrLf
+        End If
+
+        If linearSw.Elapsed.TotalMilliseconds < binarySw.Elapsed.TotalMilliseconds Then
+            result &= $"Result: Linear Search was faster."
+        ElseIf binarySw.Elapsed.TotalMilliseconds < linearSw.Elapsed.TotalMilliseconds Then
+            result &= $"Result: Binary Search was faster."
+        Else
+            result &= $"Result: Both searches took the same time."
+        End If
+
+        lblResult.Text = result
+    End Sub
+End Class
